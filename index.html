@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Should I Leave the House?</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
+
+        body{
+          font-family: 'Nunito', sans-serif;
+          background: linear-gradient(180deg,#a9d8ff,#e9f6ff);
+          height:100vh;
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          margin:0;
+          position:relative;
+          overflow:hidden;
+        }
+
+        .bg-icons img{
+          position:absolute;
+          width:50px;
+          height:50px;
+          opacity:0.6;
+          pointer-events:none;
+          transform:rotate(calc(-20deg + 40deg * var(--rand)));
+          animation: floatIcon calc(5s + 5s * var(--rand)) ease-in-out infinite alternate;
+        }
+
+        @keyframes floatIcon{
+          0%{transform:translateY(0px) rotate(calc(-20deg + 40deg * var(--rand)));}
+          100%{transform:translateY(15px) rotate(calc(-20deg + 40deg * var(--rand)));}
+        }
+
+        .app{
+          background:white;
+          padding:35px;
+          border-radius:25px;
+          width:360px;
+          text-align:center;
+          box-shadow:0 20px 60px rgba(0,0,0,0.15);
+          border:4px solid #d9f0ff;
+          animation: float 4s ease-in-out infinite;
+          z-index:1;
+        }
+
+        @keyframes float{
+          0%{transform:translateY(0px)}
+          50%{transform:translateY(-8px)}
+          100%{transform:translateY(0px)}
+        }
+
+        h1{
+          color:#2196f3;
+          margin-bottom:20px;
+        }
+
+        input{
+          padding:12px;
+          border-radius:14px;
+          border:2px solid #cde9ff;
+          width:65%;
+          font-size:14px;
+        }
+
+        button{
+          padding:12px 16px;
+          border:none;
+          border-radius:14px;
+          background:#4db8ff;
+          color:white;
+          font-weight:bold;
+          cursor:pointer;
+          margin-top:10px;
+          box-shadow:0 4px 10px rgba(0,0,0,0.1);
+          transition:0.2s;
+        }
+
+        button:hover{
+          background:#2ea7f0;
+          transform:scale(1.05);
+        }
+
+        .weather{
+          margin-top:25px;
+        }
+
+        .hidden{
+          display:none;
+        }
+
+        .weather p{
+          font-size:16px;
+          margin:6px 0;
+        }
+
+        .score{
+          font-size:42px;
+          color:#1e88e5;
+          margin:10px 0;
+        }
+
+        .verdict{
+          font-size:20px;
+          font-weight:bold;
+          color:#1565c0;
+          margin-top:10px;
+        }
+
+        .meter{
+          height:12px;
+          background:#e3f4ff;
+          border-radius:20px;
+          overflow:hidden;
+          margin:10px 0 15px 0;
+        }
+
+        .meter-fill{
+          height:100%;
+          width:0%;
+          background:linear-gradient(90deg,#64b5f6,#1e88e5);
+          transition:0.4s;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="bg-icons"></div>
+
+<div class="app">
+    <h1>☁️ Should I Leave the House?</h1>
+
+    <div>
+        <input id="cityInput" placeholder="Enter city">
+        <br>
+        <button onclick="getWeather()">Check</button>
+        <button onclick="getLocationWeather()">Use my location</button>
+    </div>
+
+    <div id="weatherBox" class="weather hidden">
+
+        <h2 id="location"></h2>
+
+        <p>🌡 Temp: <span id="temp"></span>°C</p>
+        <p>💨 Wind: <span id="wind"></span> km/h</p>
+        <p>☁️ Cloudiness: <span id="rain"></span>%</p>
+
+        <h3>Leave-the-house score</h3>
+
+        <div class="meter">
+            <div id="meterFill" class="meter-fill"></div>
+        </div>
+
+        <div class="score" id="score"></div>
+        <div class="verdict" id="verdict"></div>
+
+    </div>
+</div>
+
+<script>
+    const API_KEY = "135154e650ec5c8babd922d84c632f9d";
+
+    const iconFiles = ['snow.png','sunny.png','littlesun.png', 'rain.png'];
+    const bg = document.querySelector('.bg-icons');
+
+    const cols = 5;
+    const rows = 4;
+    const spacingX = 100 / cols;
+    const spacingY = 100 / rows;
+
+    for(let row = 0; row < rows; row++){
+      for(let col = 0; col < cols; col++){
+        const img = document.createElement('img');
+        const iconFile = iconFiles[(row * cols + col) % iconFiles.length];
+        img.src = iconFile;
+        img.style.top = (row * spacingY + spacingY / 2) + 'vh';
+        img.style.left = (col * spacingX + spacingX / 2) + 'vw';
+        // Sun icons are 40x40, others are 70x40
+        if(iconFile === 'sunny.png'){
+          img.style.width = '40px';
+          img.style.height = '40px';
+        } else {
+          img.style.width = '65px';
+          img.style.height = '40px';
+        }
+        img.style.setProperty('--rand', Math.random());
+        bg.appendChild(img);
+      }
+    }
+
+    async function getWeather(){
+      const city = document.getElementById("cityInput").value;
+      const res = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${API_KEY}`
+      );
+      const data = await res.json();
+      displayWeather(data);
+    }
+
+    function displayWeather(data){
+      const temp = data.main.temp;
+      const wind = data.wind.speed * 3.6;
+      const rain = data.clouds.all;
+
+      document.getElementById("location").innerText = data.name;
+      document.getElementById("temp").innerText = Math.round(temp);
+      document.getElementById("wind").innerText = Math.round(wind);
+      document.getElementById("rain").innerText = rain;
+
+      const score = calculateScore(temp,wind,rain);
+
+      document.getElementById("score").innerText = score;
+      document.getElementById("verdict").innerText = verdictText(score);
+      document.getElementById("meterFill").style.width = score + "%";
+
+      document.getElementById("weatherBox").classList.remove("hidden");
+    }
+
+    function calculateScore(temp, wind, rain){
+      let score = 50;
+
+      // Temperature: soft gradient
+      if(temp > 30) score += 30;
+      else if(temp > 25) score += 20;
+      else if(temp > 20) score += 10;
+      else if(temp < 0) score -= 35;
+      else if(temp < 5) score -= 25;
+      else if(temp < 8) score -= 15;
+
+      // Wind: gradual impact
+      if(wind > 40) score -= 25;
+      else if(wind > 30) score -= 15;
+      else if(wind > 20) score -= 5;
+
+      // Cloudiness / rain
+      if(rain > 80) score -= 30;
+      else if(rain > 60) score -= 20;
+      else if(rain > 40) score -= 10;
+
+      // Weekend bonus
+      const day = new Date().getDay();
+      if(day === 0 || day === 6) score += 10;
+
+      // Random small variation
+      score += (Math.random() * 10 - 5); // ±5 points
+
+      return Math.max(0, Math.min(100, Math.round(score)));
+    }
+
+    function verdictText(score){
+      const responses = {
+        stayInside:["🚫 Absolutely not. Stay inside.","🛌 The house is safer today.","☔ Outside is hostile.","📺 Netflix weather detected."],
+        coffeeOnly:["☕ Coffee run approved.","🥐 Leave briefly for snacks.","🌧 Go outside, regret it, buy coffee.","🚶 Short outdoor mission allowed."],
+        walkMaybe:["🌿 Mildly outdoorsy weather.","🎧 Headphones + dramatic walk.","🌤 Fresh air recommended.","📸 Main character moment possible."],
+        goOutside:["🌈 Touch grass immediately.","🌞 Outdoor activities unlocked.","🚴 Perfect outside weather.","🏞 Nature is calling."]
+      };
+
+      function random(arr){return arr[Math.floor(Math.random()*arr.length)];}
+      if(score<30) return random(responses.stayInside);
+      if(score<60) return random(responses.coffeeOnly);
+      if(score<80) return random(responses.walkMaybe);
+      return random(responses.goOutside);
+    }
+
+    function getLocationWeather(){
+      navigator.geolocation.getCurrentPosition(async (position)=>{
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+        );
+        const data = await res.json();
+        displayWeather(data);
+      });
+    }
+</script>
+
+</body>
+</html>
